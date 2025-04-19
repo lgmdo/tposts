@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "tposts"
+version = "0.1.0"
+description = "Uma plataforma de microblogging."
+authors = ["lgmo <lgmo@cin.ufpe.br>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "^5.2"
+djangorestframework = "^3.16.0"
+drf-spectacular = "^0.28.0"
+psycopg = {extras = ["binary"], version = "^3.2.6"}
+python-decouple = "^3.8"
+
+
+[tool.poetry.group.dev.dependencies]
+django-types = "^0.20.0"
+pyright = "^1.1.399"
+ruff = "^0.11.5"
+djangorestframework-types = "^0.9.0"
+dotenv = "^0.9.9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+manage = "django.core.management:execute_from_command_line"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"

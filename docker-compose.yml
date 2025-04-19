@@ -1,0 +1,24 @@
+services:
+  tposts:
+    container_name: tposts
+    build: 
+      context: .
+      args:
+        ENV: dev
+    env_file: .env
+    ports: 
+     - ${SERVER_PORT}:8000
+    entrypoint: "./entrypoint.dev.sh"
+    volumes:
+      - ./src:/usr/local/tposts/src
+  db:
+    container_name: tposts-db
+    image: postgres
+    shm_size: 128mb 
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: tposts
+    ports:
+      - 5432:5432
+

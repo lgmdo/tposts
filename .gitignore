@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+db.sqlite3
+/static/
+media/
+
+# Environment
+.env
+.venv/
+.env.*
+
+# VSCode / IDEs
+.vscode/
+.idea/
+
+# Pyright / Ruff cache
+.pyright/
+ruff_cache/
+
+# Poetry
+poetry.lock
+db.sqlite3
+
