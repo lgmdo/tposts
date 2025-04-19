@@ -1,0 +1,43 @@
+name: Tests, lint and type checking
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DB_PORT: 5432
+      DB_NAME: tposts
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      LOCAL: true
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: tposts
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "1.8.3"
+      - name: Install dependencies
+        run: poetry install
+      - name: Run tests
+        run: make test
+      - name: Type check
+        run: make type-check
+      - name: Lint check
+        run: make lint
