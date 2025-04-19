@@ -16,7 +16,6 @@ PYTHON ?= $(POETRY) run python
 RUFF ?= $(POETRY) run ruff
 PYRIGHT ?= $(POETRY) run pyright
 
-## Run the test suite
 test:
 	@echo "Running test $(RUNNING_MODE)"
 	@$(PYTHON) $(MANAGE_PY) test $(TEST_PATH);
