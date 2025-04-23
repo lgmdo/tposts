@@ -13,6 +13,10 @@ djangorestframework = "^3.16.0"
 drf-spectacular = "^0.28.0"
 psycopg = {extras = ["binary"], version = "^3.2.6"}
 dotenv = "^0.9.9"
+pillow = "^11.2.1"
+pyjwt = "^2.10.1"
+django-extensions = "^4.1"
+django-gmailapi-backend = "^0.3.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -31,11 +35,19 @@ manage = "django.core.management:execute_from_command_line"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+exclude = [
+    "**/migrations/*.py",
+    "**/migrations",
+]
 
 [tool.ruff]
 line-length = 79
 target-version = "py312"
 lint.select = ["E", "F", "I"]
+exclude = [
+    "**/migrations/*.py",
+    "**/migrations",
+]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"

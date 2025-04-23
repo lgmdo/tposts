@@ -26,3 +26,6 @@ ruff_cache/
 poetry.lock
 db.sqlite3
 
+# Static files
+src/media/
+
