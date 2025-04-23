@@ -25,7 +25,7 @@ class SignUpViewTests(TestCase):
             self.url, self.data, content_type="application/json"
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 204)
         self.assertTrue(User.objects.filter(email="test@example.com").exists())
         send_mail.assert_called_once_with(
             ANY,
