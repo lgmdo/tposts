@@ -13,6 +13,10 @@ jobs:
       DB_HOST: localhost
       DOMAIN: localhost
       LOCAL: true
+      SES_HOST: localhost
+      SES_SMTP_USERNAME: username
+      SES_SMTP_PASSWORD: password
+      SES_VERIFIED_EMAIL: email@example.com
 
     services:
       postgres:
