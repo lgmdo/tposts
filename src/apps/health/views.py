@@ -5,7 +5,9 @@ from rest_framework.views import APIView
 from .serializers import HealthCheckSerializer
 
 
-@extend_schema(responses=HealthCheckSerializer, tags=["Health"])
+@extend_schema(
+    summary="Health check", responses=HealthCheckSerializer, tags=["Health"]
+)
 class HealthCheckView(APIView):
     def get(self, _):
         """

@@ -1,4 +1,4 @@
-.PHONY: test type-check lint
+.PHONY: test type-check lint migrate
 
 DOCKER_SERVICE ?= tposts
 TEST_PATH ?= src
@@ -27,6 +27,13 @@ type-check:
 lint:
 	@echo "Running lint $(RUNNING_MODE)"
 	@$(RUFF) check;
+
+migrate:
+	@echo "Running migration $(RUNNING_MODE)"
+	@$(PYTHON) $(MANAGE_PY) makemigrations
+	@$(PYTHON) $(MANAGE_PY) migrate
+
+
 
 
 
