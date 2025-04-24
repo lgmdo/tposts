@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ChangePasswordView,
     ConfirmSignUpView,
     LoginView,
     LogoutView,
@@ -9,6 +10,11 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "change-password",
+        ChangePasswordView.as_view(),
+        name="change-password",
+    ),
     path(
         "confirm-sign-up/<str:token>",
         ConfirmSignUpView.as_view(),

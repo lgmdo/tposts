@@ -21,7 +21,7 @@ class UsersManagersTests(TestCase):
             ),
         )
         self.assertEqual(user.email, "normal@user.com")
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
 

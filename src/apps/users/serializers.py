@@ -3,10 +3,12 @@ from typing import Any, cast
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.utils.timezone import timedelta
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from apps.users.managers import CustomUserManager
 from apps.users.models import CustomUser
@@ -90,3 +92,39 @@ class ProfilePictureUploadSerializer(serializers.ModelSerializer):
     class Meta:  # pyright: ignore
         model = CustomUser
         fields = ["profile_picture"]
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_new_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs: dict[str, Any]):
+        user = self.context["request"].user
+
+        old_password = attrs["old_password"]
+        new_password = attrs["new_password"]
+        confirm_new_password = attrs["confirm_new_password"]
+
+        if not user.check_password(old_password):
+            raise serializers.ValidationError(
+                {"old_password": "Old password is incorrect."}
+            )
+
+        if new_password != confirm_new_password:
+            raise serializers.ValidationError(
+                {"new_password": "The new passwords don't match."}
+            )
+
+        try:
+            validate_password(new_password, user)
+        except ValidationError as e:
+            raise serializers.ValidationError({"new_password": f"{e}"})
+
+        return attrs
+
+    def save(self, **_: Any):
+        user = self.context["request"].user
+        new_password = self.validated_data["new_password"]
+        user.set_password(new_password)
+        user.save()
