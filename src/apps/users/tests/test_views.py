@@ -1,12 +1,18 @@
+from io import BytesIO
 from unittest.mock import ANY, MagicMock, patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
+from typing_extensions import cast
+
+from ..models import CustomUser
 
 User = get_user_model()
 
@@ -156,3 +162,59 @@ class LogoutViewTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(response.json(), {"detail": "Invalid token."})
+
+
+class ProfilePictureUploadViewTest(APITestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "user@example.com",
+            "password": "strongpassword123",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        self.user = User.objects.create_user(**self.user_data)
+        self.url = reverse("profile-picture")
+        self.client.force_authenticate(user=self.user)
+
+    def test_upload_profile_picture_success(self):
+        image = Image.new("RGB", (1, 1), color="red")  # 1x1 pixel vermelho
+        buffer = BytesIO()
+        image.save(buffer, format="BMP")
+        buffer.seek(0)
+        image = SimpleUploadedFile(
+            name="test_image.bmp",
+            content=buffer.read(),
+            content_type="image/bmp",
+        )
+        response = self.client.put(
+            self.url, {"profile_picture": image}, format="multipart"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("url", response.json())
+        self.user.refresh_from_db()
+        user = cast(CustomUser, self.user)
+        print(user.profile_picture)
+
+    def test_upload_profile_picture_invalid_format(self):
+        # Simula upload de um arquivo inválido
+        txt_file = SimpleUploadedFile(
+            "file.txt", b"not an image", content_type="text/plain"
+        )
+        response = self.client.put(
+            self.url, {"profile_picture": txt_file}, format="multipart"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("profile_picture", response.json())
+
+    def test_unauthenticated_user_cannot_upload(self):
+        self.client.logout()
+        image = SimpleUploadedFile(
+            "profile.jpg", b"file_content", content_type="image/jpeg"
+        )
+        response = self.client.put(
+            self.url, {"profile_picture": image}, format="multipart"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

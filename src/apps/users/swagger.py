@@ -5,7 +5,11 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 
-from .serializers import LoginSerializer, SignUpSerializer
+from .serializers import (
+    LoginSerializer,
+    ProfilePictureUploadSerializer,
+    SignUpSerializer,
+)
 
 sign_up_schema = extend_schema(
     summary="User sign-up",
@@ -79,4 +83,23 @@ logout_schema = extend_schema(
         ),
     },
     tags=["Authentication"],
+)
+
+profile_picture_schema = extend_schema(
+    methods=["PUT"],
+    request=ProfilePictureUploadSerializer(),
+    responses={
+        200: OpenApiResponse(
+            description="Public url of the profile picture.",
+            response={"url": "picture_url"},
+        ),
+        400: OpenApiResponse(
+            description="Validation error for the submitted data"
+        ),
+    },
+    description=(
+        "Uploads a profile picture to S3 and returns the public image URL."
+    ),
+    summary="Profile picture upload",
+    tags=["Users"],
 )

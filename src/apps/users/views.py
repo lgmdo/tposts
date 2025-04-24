@@ -1,8 +1,11 @@
+from typing import cast
+
 import jwt
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,11 +13,16 @@ from rest_framework.views import APIView
 
 from apps.users.models import CustomUser
 
-from .serializers import LoginSerializer, SignUpSerializer
+from .serializers import (
+    LoginSerializer,
+    ProfilePictureUploadSerializer,
+    SignUpSerializer,
+)
 from .swagger import (
     confirm_sign_up_schema,
     login_schema,
     logout_schema,
+    profile_picture_schema,
     sign_up_schema,
 )
 
@@ -107,4 +115,35 @@ class LogoutView(APIView):
             return Response(
                 {"detail": "Token not found."},
                 status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+class ProfilePictureUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    @profile_picture_schema
+    def put(self, request: Request):
+        try:
+            serializer = ProfilePictureUploadSerializer(
+                instance=request.user,
+                data=request.data,
+                partial=True,
+            )
+
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            serializer.save()
+            user = cast(CustomUser, request.user)
+            return Response(
+                {"url": user.profile_picture.url},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"erro": f"{e}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
