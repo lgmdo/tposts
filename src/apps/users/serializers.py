@@ -2,7 +2,7 @@ from typing import Any, cast
 
 import jwt
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.utils.timezone import timedelta
@@ -62,3 +62,23 @@ class SignUpSerializer(serializers.ModelSerializer):
         )
 
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=128)
+
+    def validate(self, attrs: dict["str", Any]):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        user = authenticate(
+            username=email,
+            password=password,
+        )
+
+        if user is None:
+            raise serializers.ValidationError("Invalid credentials.")
+
+        attrs["user"] = user
+        return attrs

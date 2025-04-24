@@ -4,6 +4,9 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient
 
 User = get_user_model()
 
@@ -69,3 +72,87 @@ class SignUpViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("password", response.json())
         send_mail.assert_not_called()
+
+
+class LoginViewTests(TestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "test@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "password": "securepassword123",
+        }
+        self.user = get_user_model().objects.create_user(**self.user_data)
+        self.user.is_active = True
+        self.user.save()
+        self.url = reverse("login")
+
+    def test_login_success(self):
+        login_data = {
+            "email": self.user_data["email"],
+            "password": self.user_data["password"],
+        }
+
+        response = self.client.post(self.url, login_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.json())
+
+        token = response.json()["token"]
+        self.assertTrue(Token.objects.filter(key=token.split(" ")[1]).exists())
+
+    def test_login_invalid_credentials(self):
+        invalid_data = {
+            "email": "wronguser@example.com",
+            "password": "wrongpassword",
+        }
+
+        response = self.client.post(self.url, invalid_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutViewTests(TestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "user@example.com",
+            "password": "strongpassword123",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        self.user = get_user_model().objects.create_user(**self.user_data)
+        self.user.is_active = True
+        self.user.save()
+
+        self.token = Token.objects.create(user=self.user)
+
+        self.api_client: APIClient = APIClient()
+        self.url = reverse("logout")
+
+    def test_logout_success(self):
+        self.api_client.credentials(
+            HTTP_AUTHORIZATION=f"Token {self.token.key}"
+        )
+
+        response = self.api_client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        with self.assertRaises(Token.DoesNotExist):
+            Token.objects.get(user=self.user)
+
+    def test_logout_without_token(self):
+        response = self.api_client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Authentication credentials were not provided."},
+        )
+
+    def test_logout_token_not_found(self):
+        self.api_client.credentials(HTTP_AUTHORIZATION="Token invalid_token")
+
+        response = self.api_client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.json(), {"detail": "Invalid token."})

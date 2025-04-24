@@ -5,7 +5,7 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 
-from .serializers import SignUpSerializer
+from .serializers import LoginSerializer, SignUpSerializer
 
 sign_up_schema = extend_schema(
     summary="User sign-up",
@@ -14,12 +14,12 @@ sign_up_schema = extend_schema(
         204: OpenApiResponse(
             response=None,
             description=(
-                "Cadastro realizado com sucesso. Verifique seu email "
-                "para confirmar o cadastro."
+                "Registration successful. Check your email "
+                "to confirm your account."
             ),
         ),
         400: OpenApiResponse(
-            response=None, description="Dados inválidos para cadastro."
+            response=None, description="Invalid data for registration."
         ),
     },
     tags=["Authentication"],
@@ -30,7 +30,7 @@ confirm_sign_up_schema = extend_schema(
     parameters=[
         OpenApiParameter(
             name="token",
-            description="Token received in email.",
+            description="Token received via email.",
             location=OpenApiParameter.PATH,
             type=OpenApiTypes.STR,
             required=True,
@@ -40,16 +40,42 @@ confirm_sign_up_schema = extend_schema(
         204: OpenApiResponse(
             response=None,
             description=(
-                "Email confirmado com sucesso ou usuário já confirmado."
+                "Email successfully confirmed or user already confirmed."
             ),
         ),
         400: OpenApiResponse(
             response=None,
-            description="Token inválido ou malformado.",
+            description="Invalid or malformed token.",
         ),
         404: OpenApiResponse(
             response=None,
-            description="Usuário não encontrado com base no token.",
+            description="User not found for the given token.",
+        ),
+    },
+    tags=["Authentication"],
+)
+
+login_schema = extend_schema(
+    summary="Logs in user",
+    request=LoginSerializer(),
+    responses={
+        200: OpenApiResponse(
+            description=("Login successfull"),
+        ),
+    },
+    tags=["Authentication"],
+)
+
+
+logout_schema = extend_schema(
+    summary="Logs out user",
+    request=None,
+    responses={
+        204: OpenApiResponse(
+            description=("Logout successfull"),
+        ),
+        401: OpenApiResponse(
+            description=("Unauthorized."),
         ),
     },
     tags=["Authentication"],

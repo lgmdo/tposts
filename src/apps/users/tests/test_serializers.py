@@ -1,10 +1,11 @@
 from unittest.mock import ANY, MagicMock, patch
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from apps.users.models import CustomUser
-from apps.users.serializers import SignUpSerializer
+from apps.users.serializers import LoginSerializer, SignUpSerializer
 
 
 class SignUpSerializerTest(TestCase):
@@ -47,3 +48,42 @@ class SignUpSerializerTest(TestCase):
             settings.DEFAULT_FROM_EMAIL,
             [self.valid_data["email"]],
         )
+
+
+class LoginSerializerTest(TestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "user@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "password": "strongpassword123",
+        }
+        self.user = get_user_model().objects.create_user(**self.user_data)
+        self.user.is_active = True
+        self.user.save()
+
+    def test_valid_credentials(self):
+        serializer = LoginSerializer(data=self.user_data)
+
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.validated_data["user"], self.user)
+
+    def test_invalid_password(self):
+        data = {"email": "user@example.com", "password": "wrongpassword"}
+        serializer = LoginSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+
+    def test_invalid_email(self):
+        data = {"email": "wrong@example.com", "password": "strongpassword123"}
+        serializer = LoginSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
+
+    def test_inactive_user(self):
+        self.user.is_active = False
+        self.user.save()
+        data = {"email": "user@example.com", "password": "strongpassword123"}
+        serializer = LoginSerializer(data=data)
+
+        self.assertFalse(serializer.is_valid())
