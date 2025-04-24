@@ -196,9 +196,6 @@ if USE_S3:
     AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
     AWS_S3_REGION_NAME = "us-east-1"
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
-    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-    STATIC_URL = AWS_S3_CUSTOM_DOMAIN + "static/"
 
     STORAGES = {
         "default": {
@@ -212,19 +209,19 @@ if USE_S3:
             },
         },
         "staticfiles": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
 else:
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-    MEDIA_URL = "/media/"  # pyright: ignore
-    STATIC_URL = "static/"  # pyright: ignore
-
     STORAGES = {  # pyright: ignore
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+STATIC_URL = "/static/"

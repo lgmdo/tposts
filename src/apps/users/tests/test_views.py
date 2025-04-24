@@ -218,3 +218,46 @@ class ProfilePictureUploadViewTest(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ChangePasswordTests(APITestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "user@example.com",
+            "password": "old_password123",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        self.user = User.objects.create_user(**self.user_data)
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse("change-password")
+
+    def test_change_password_success(self):
+        data = {
+            "old_password": "old_password123",
+            "new_password": "new_secure_password456",
+            "confirm_new_password": "new_secure_password456",
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("new_secure_password456"))
+
+    def test_wrong_old_password(self):
+        data = {
+            "old_password": "wrong_old_password",
+            "new_password": "new_secure_password456",
+            "confirm_new_password": "new_secure_password456",
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_mismatched_new_passwords(self):
+        data = {
+            "old_password": "old_password123",
+            "new_password": "new_secure_password456",
+            "confirm_new_password": "different_password789",
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

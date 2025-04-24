@@ -1,4 +1,3 @@
-
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
@@ -11,7 +10,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(default=timezone.now)
     email = models.EmailField(_("email address"), unique=True)
     first_name = models.CharField(max_length=25)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     last_name = models.CharField(max_length=25, blank=True, null=True)
     profile_picture = models.ImageField(

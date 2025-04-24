@@ -7,6 +7,7 @@ from drf_spectacular.utils import (
 
 from .serializers import (
     LoginSerializer,
+    PasswordChangeSerializer,
     ProfilePictureUploadSerializer,
     SignUpSerializer,
 )
@@ -102,4 +103,16 @@ profile_picture_schema = extend_schema(
     ),
     summary="Profile picture upload",
     tags=["Users"],
+)
+
+change_password_schema = extend_schema(
+    methods=["POST"],
+    request=PasswordChangeSerializer,
+    responses={
+        200: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT,
+    },
+    description="Change the current authenticated user's password.",
+    summary="Change password",
+    tags=["Authentication"],
 )

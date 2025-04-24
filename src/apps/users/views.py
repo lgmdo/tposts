@@ -15,10 +15,12 @@ from apps.users.models import CustomUser
 
 from .serializers import (
     LoginSerializer,
+    PasswordChangeSerializer,
     ProfilePictureUploadSerializer,
     SignUpSerializer,
 )
 from .swagger import (
+    change_password_schema,
     confirm_sign_up_schema,
     login_schema,
     logout_schema,
@@ -147,3 +149,20 @@ class ProfilePictureUploadView(APIView):
                 {"erro": f"{e}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @change_password_schema
+    def post(self, request: Request):
+        serializer = PasswordChangeSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"detail": "Password changed successfully!"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
