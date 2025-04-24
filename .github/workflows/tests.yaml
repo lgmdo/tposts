@@ -13,6 +13,7 @@ jobs:
       DB_HOST: localhost
       DOMAIN: localhost
       LOCAL: true
+      DEBUG: true
       SES_HOST: localhost
       SES_SMTP_USERNAME: username
       SES_SMTP_PASSWORD: password

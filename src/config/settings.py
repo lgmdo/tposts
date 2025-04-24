@@ -31,9 +31,9 @@ SECRET_KEY = (
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "false") == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "django_extensions",
+    "storages",
     "apps.health",
 ]
 
@@ -68,6 +69,7 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
     # OTHER SETTINGS
 }
 
@@ -166,21 +168,12 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = "static/"
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.CustomUser"
-
-# Media setup
-MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 DOMAIN = os.environ["DOMAIN"]
 
@@ -192,3 +185,46 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ["SES_SMTP_USERNAME"]
 EMAIL_HOST_PASSWORD = os.environ["SES_SMTP_PASSWORD"]
 DEFAULT_FROM_EMAIL = os.environ["SES_VERIFIED_EMAIL"]
+
+# Media settings
+USE_S3 = not DEBUG
+if USE_S3:
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+    AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
+    AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
+    AWS_S3_REGION_NAME = "us-east-1"
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    STATIC_URL = AWS_S3_CUSTOM_DOMAIN + "static/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "custom_domain": f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com",
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+    }
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+    MEDIA_URL = "/media/"  # pyright: ignore
+    STATIC_URL = "static/"  # pyright: ignore
+
+    STORAGES = {  # pyright: ignore
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+    }

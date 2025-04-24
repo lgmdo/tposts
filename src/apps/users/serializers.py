@@ -82,3 +82,11 @@ class LoginSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+
+
+class ProfilePictureUploadSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.ImageField()
+
+    class Meta:  # pyright: ignore
+        model = CustomUser
+        fields = ["profile_picture"]
