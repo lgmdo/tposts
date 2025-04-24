@@ -11,10 +11,10 @@ ifeq ($(LOCAL), true)
 	ECHO ?= echo
 	DEBUG_PREFIX ?= DEBUG=true
 else
-	POETRY ?= docker compose up exec poetry
+	POETRY ?= docker compose exec tposts poetry
 	RUNNING_MODE ?= in Docker
 	REMOVE_MEDIA ?= docker compose exec tposts rm -rf src/media
-	ECHO ?= docker compose exec echo
+	ECHO ?= docker compose exec tposts echo
 	DEBUG_PREFIX ?=
 endif
 
