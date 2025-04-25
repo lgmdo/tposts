@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from apps.users.models import CustomUser
+from .models import CustomUser
 
 
 class CustomUserAdmin(UserAdmin):
@@ -25,6 +25,7 @@ class CustomUserAdmin(UserAdmin):
                     "is_active",
                     "is_staff",
                     "is_superuser",
+                    "is_email_confirmed",
                     "groups",
                     "user_permissions",
                 )
@@ -53,6 +54,7 @@ class CustomUserAdmin(UserAdmin):
         "last_name",
         "is_staff",
         "is_active",
+        "is_email_confirmed",
     )
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)

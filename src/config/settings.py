@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "storages",
     "apps.health",
+    "apps.following",
 ]
 
 REST_FRAMEWORK = {
