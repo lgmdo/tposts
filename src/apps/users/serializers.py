@@ -10,8 +10,8 @@ from django.utils.timezone import timedelta
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from apps.users.managers import CustomUserManager
-from apps.users.models import CustomUser
+from .managers import CustomUserManager
+from .models import CustomUser
 
 
 class SignUpSerializer(serializers.ModelSerializer):

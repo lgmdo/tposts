@@ -40,8 +40,8 @@ class CustomUserManager(BaseUserManager[AbstractBaseUser]):
         self,
         email: str,
         password: str,
-        first_name: str,
-        last_name: str | None,
+        first_name: str = "admin",
+        last_name: str | None = None,
         **extra_fields: Any,
     ):
         extra_fields.setdefault("is_staff", True)
