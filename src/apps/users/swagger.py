@@ -7,9 +7,12 @@ from drf_spectacular.utils import (
 
 from .serializers import (
     LoginSerializer,
+    MyProfileSerializer,
     PasswordChangeSerializer,
     ProfilePictureUploadSerializer,
     SignUpSerializer,
+    UserListQueryParamsSerializer,
+    UserProfileSerializer,
 )
 
 sign_up_schema = extend_schema(
@@ -115,4 +118,66 @@ change_password_schema = extend_schema(
     description="Change the current authenticated user's password.",
     summary="Change password",
     tags=["Authentication"],
+)
+
+profile_schema = extend_schema(
+    description="Retrieve the public profile of a user by UID.",
+    responses={200: UserProfileSerializer},
+    parameters=[
+        OpenApiParameter(
+            name="uid",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            description="ID of the user whose profile is being requested.",
+            required=True,
+        )
+    ],
+    tags=["Users"],
+)
+
+my_profile_schema = extend_schema(
+    description="Retrieve the public profile of authenticacted user.",
+    responses={200: MyProfileSerializer},
+    tags=["Users"],
+)
+
+users_list_schema = extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="search",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Search by user's full name",
+        ),
+        OpenApiParameter(
+            name="ordering_type",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            enum=[e.value for e in UserListQueryParamsSerializer.OrderingType],
+            description='Ordering option: "name" or "followers_count"',
+            required=False,
+        ),
+        OpenApiParameter(
+            name="is_following_you",
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description="Filter users who follow you",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="page",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Page number for pagination (optional)",
+            required=False,
+        ),
+        OpenApiParameter(
+            name="page_size",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Page size for pagination (optional)",
+            required=False,
+        ),
+    ],
+    tags=["Users"],
 )

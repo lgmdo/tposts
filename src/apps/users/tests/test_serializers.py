@@ -8,7 +8,7 @@ from apps.users.models import CustomUser
 from apps.users.serializers import LoginSerializer, SignUpSerializer
 
 
-class SignUpSerializerTest(TestCase):
+class SignUpSerializerTests(TestCase):
     def setUp(self):
         self.valid_data = {
             "email": "test@example.com",
@@ -50,7 +50,7 @@ class SignUpSerializerTest(TestCase):
         )
 
 
-class LoginSerializerTest(TestCase):
+class LoginSerializerTests(TestCase):
     def setUp(self):
         self.user_data = {
             "email": "user@example.com",
