@@ -26,10 +26,10 @@ from .swagger import follow_schema, following_list_schema
 User = get_user_model()
 
 
-@follow_schema
 class FollowView(APIView):
     permission_classes = [IsEmailConfirmed]
 
+    @follow_schema
     def post(self, request: Request, uid: int):
         serializer = FollowSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

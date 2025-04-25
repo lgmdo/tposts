@@ -2,29 +2,41 @@ from typing import cast
 
 import jwt
 from django.conf import settings
+from django.db.models import Count, F, Value
+from django.db.models.functions import Concat
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.filters import SearchFilter
+from rest_framework.generics import ListAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.utils.paginations import CustomPagination
+
 from .models import CustomUser
 from .serializers import (
     LoginSerializer,
+    MyProfileSerializer,
     PasswordChangeSerializer,
     ProfilePictureUploadSerializer,
     SignUpSerializer,
+    UserListQueryParamsSerializer,
+    UserProfileSerializer,
 )
 from .swagger import (
     change_password_schema,
     confirm_sign_up_schema,
     login_schema,
     logout_schema,
+    my_profile_schema,
     profile_picture_schema,
+    profile_schema,
     sign_up_schema,
+    users_list_schema,
 )
 
 
@@ -172,3 +184,66 @@ class ChangePasswordView(APIView):
                 status=status.HTTP_200_OK,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @profile_schema
+    def get(self, request: Request, uid: int):
+        user = get_object_or_404(CustomUser, pk=uid)
+        serializer = UserProfileSerializer(user, context={"request": request})
+        return Response(serializer.data)
+
+
+class UsersViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @profile_schema
+    def get(self, request: Request, uid: int):
+        user = get_object_or_404(CustomUser, pk=uid)
+        serializer = UserProfileSerializer(user, context={"request": request})
+        return Response(serializer.data)
+
+
+class MyProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @my_profile_schema
+    def get(self, request: Request):
+        user = request.user
+        serializer = MyProfileSerializer(user, context={"request": request})
+        return Response(serializer.data)
+
+
+@users_list_schema
+class UserListView(ListAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    filter_backends = [SearchFilter]
+    search_fields = ["first_name", "last_name"]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        query_params_serializer = UserListQueryParamsSerializer(
+            data=self.request.query_params
+        )
+        query_params_serializer.is_valid(raise_exception=True)
+        validated_query_params = query_params_serializer.validated_data
+
+        qs = CustomUser.objects.exclude(id=user.pk).annotate(
+            full_name=Concat(F("first_name"), Value(" "), F("last_name")),
+            followers_count=Count("followers", distinct=True),
+        )
+
+        if validated_query_params.get("is_following_you"):
+            qs = qs.filter(following__followed=user)
+
+        if validated_query_params.get("ordering_type") == "full_name":
+            qs = qs.order_by("full_name")
+        elif validated_query_params.get("ordering_type") == "followers_count":
+            qs = qs.order_by("-followers_count")
+
+        return qs

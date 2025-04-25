@@ -5,8 +5,11 @@ from .views import (
     ConfirmSignUpView,
     LoginView,
     LogoutView,
+    MyProfileView,
     ProfilePictureUploadView,
     SignUpView,
+    UserListView,
+    UserProfileView,
 )
 
 urlpatterns = [
@@ -28,4 +31,15 @@ urlpatterns = [
         name="profile-picture",
     ),
     path("sign-up", SignUpView.as_view(), name="sign-up"),
+    path(
+        "me",
+        MyProfileView.as_view(),
+        name="my-profile",
+    ),
+    path("", UserListView.as_view(), name="user-list"),
+    path(
+        "<str:uid>",
+        UserProfileView.as_view(),
+        name="user-profile",
+    ),
 ]

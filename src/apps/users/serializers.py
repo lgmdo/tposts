@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, cast
 
 import jwt
@@ -128,3 +129,46 @@ class PasswordChangeSerializer(serializers.Serializer):
         new_password = self.validated_data["new_password"]
         user.set_password(new_password)
         user.save()
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    is_following_you = serializers.SerializerMethodField()
+
+    class Meta:  # pyright: ignore
+        model = CustomUser
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "profile_picture",
+            "is_following_you",
+        )
+
+    def get_is_following_you(self, obj: CustomUser):
+        request_user = self.context["request"].user
+        return request_user.followers.filter(follower=obj).exists()
+
+
+class MyProfileSerializer(serializers.ModelSerializer):
+    class Meta:  # pyright: ignore
+        model = CustomUser
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "profile_picture",
+        )
+
+
+class UserListQueryParamsSerializer(serializers.Serializer):
+    class OrderingType(str, Enum):
+        NAME = "name"
+        FOLLOWERS = "followers_count"
+
+    search = serializers.CharField(required=False)
+    ordering_type = serializers.ChoiceField(
+        choices=OrderingType, default=OrderingType.FOLLOWERS
+    )
+    is_following_you = serializers.BooleanField(required=False)

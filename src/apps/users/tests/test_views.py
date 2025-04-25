@@ -15,6 +15,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 
+from apps.following.models import Follow
+
 from ..models import CustomUser
 
 User = get_user_model()
@@ -167,7 +169,7 @@ class LoginViewTests(TestCase):
             "last_name": "Doe",
             "password": "securepassword123",
         }
-        self.user = get_user_model().objects.create_user(**self.user_data)
+        self.user = User.objects.create_user(**self.user_data)
         self.user.is_active = True
         self.user.save()
         self.url = reverse("login")
@@ -205,7 +207,7 @@ class LogoutViewTests(TestCase):
             "first_name": "John",
             "last_name": "Doe",
         }
-        self.user = get_user_model().objects.create_user(**self.user_data)
+        self.user = User.objects.create_user(**self.user_data)
         self.user.is_active = True
         self.user.save()
 
@@ -243,7 +245,7 @@ class LogoutViewTests(TestCase):
         self.assertEqual(response.json(), {"detail": "Invalid token."})
 
 
-class ProfilePictureUploadViewTest(APITestCase):
+class ProfilePictureUploadViewTests(APITestCase):
     def setUp(self):
         self.user_data = {
             "email": "user@example.com",
@@ -340,3 +342,207 @@ class ChangePasswordTests(APITestCase):
         }
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileViewTests(APITestCase):
+    def setUp(self):
+        user_data = {
+            "email": "main@example.com",
+            "password": "password123",
+            "first_name": "Main",
+            "last_name": "User",
+        }
+        self.user = cast(
+            CustomUser,
+            User.objects.create_user(**user_data),
+        )
+        other_user_data = {
+            "email": "other@example.com",
+            "password": "password123",
+            "first_name": "Other",
+            "last_name": "User",
+        }
+        self.other_user = cast(
+            CustomUser,
+            User.objects.create_user(**other_user_data),
+        )
+
+        self.url = reverse("user-profile", args=[self.other_user.pk])
+
+    def test_unauthenticated_user_cannot_access_profile(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_authenticated_user_can_view_profile(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["id"], self.other_user.pk)
+        self.assertEqual(data["first_name"], self.other_user.first_name)
+        self.assertEqual(data["last_name"], self.other_user.last_name)
+        self.assertIsNone(data["profile_picture"])
+        self.assertFalse(data["is_following_you"])
+
+    def test_is_following_you_true(self):
+        Follow.objects.create(follower=self.other_user, followed=self.user)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+
+        self.assertTrue(response.json()["is_following_you"])
+
+    def test_user_not_found(self):
+        self.client.force_authenticate(user=self.user)
+        invalid_url = reverse("user-profile", args=[9999])
+
+        response = self.client.get(invalid_url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class MyProfileViewTests(APITestCase):
+    def setUp(self):
+        self.user_data = {
+            "email": "user@example.com",
+            "password": "old_password123",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        self.user = User.objects.create_user(**self.user_data)
+        self.client.force_authenticate(self.user)
+        self.url = reverse("my-profile")
+
+    def test_get_my_profile(self):
+        response = self.client.get(self.url)
+
+        data = response.json()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["email"], self.user.email)
+        self.assertEqual(data["first_name"], self.user.first_name)
+        self.assertEqual(data["last_name"], self.user.last_name)
+        self.assertIsNone(data["profile_picture"])
+        self.assertEqual(data["last_name"], self.user.last_name)
+
+
+class UserListViewTests(APITestCase):
+    def setUp(self):
+        user_data = {
+            "email": "me@example.com",
+            "password": "pass",
+            "first_name": "Me",
+            "last_name": "Myself",
+        }
+        self.user = cast(CustomUser, User.objects.create_user(**user_data))
+        other_one_data = {
+            "email": "a@example.com",
+            "password": "pass",
+            "first_name": "Alice",
+            "last_name": "Zed",
+        }
+        self.other_one = cast(
+            CustomUser,
+            User.objects.create_user(**other_one_data),
+        )
+        other_two_data = {
+            "email": "b@example.com",
+            "password": "pass",
+            "first_name": "Bob",
+            "last_name": "Yard",
+        }
+        self.other_two = cast(
+            CustomUser,
+            User.objects.create_user(**other_two_data),
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse("user-list")
+
+    def test_list_users_successfully(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data), 2)
+
+        self.assertEqual(data[0]["id"], self.other_one.pk)
+        self.assertEqual(data[0]["first_name"], self.other_one.first_name)
+        self.assertEqual(data[0]["last_name"], self.other_one.last_name)
+        self.assertEqual(data[0]["email"], self.other_one.email)
+        self.assertIsNone(data[0]["profile_picture"])
+        self.assertFalse(data[0]["is_following_you"])
+
+        self.assertEqual(data[1]["id"], self.other_two.pk)
+        self.assertEqual(data[1]["first_name"], self.other_two.first_name)
+        self.assertEqual(data[1]["last_name"], self.other_two.last_name)
+        self.assertEqual(data[1]["email"], self.other_two.email)
+        self.assertIsNone(data[1]["profile_picture"])
+        self.assertFalse(data[1]["is_following_you"])
+
+    def test_search_users_by_name(self):
+        response = self.client.get(self.url, {"search": "Alice"})
+        data = response.json()
+
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["id"], self.other_one.pk)
+        self.assertEqual(data[0]["first_name"], self.other_one.first_name)
+        self.assertEqual(data[0]["last_name"], self.other_one.last_name)
+        self.assertEqual(data[0]["email"], self.other_one.email)
+        self.assertIsNone(data[0]["profile_picture"])
+        self.assertFalse(data[0]["is_following_you"])
+
+    def test_filter_is_following_you(self):
+        Follow.objects.create(follower=self.other_one, followed=self.user)
+
+        response = self.client.get(self.url, {"is_following_you": True})
+        data = response.json()
+
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["id"], self.other_one.pk)
+        self.assertEqual(data[0]["first_name"], self.other_one.first_name)
+        self.assertEqual(data[0]["last_name"], self.other_one.last_name)
+        self.assertEqual(data[0]["email"], self.other_one.email)
+        self.assertIsNone(data[0]["profile_picture"])
+        self.assertTrue(data[0]["is_following_you"])
+
+    def test_ordering_by_name(self):
+        response = self.client.get(self.url, {"ordering_type": "name"})
+        data = response.json()
+
+        names = [u["first_name"] for u in data]
+        self.assertEqual(names, sorted(names))
+
+    def test_ordering_by_followers_count(self):
+        Follow.objects.create(follower=self.user, followed=self.other_one)
+
+        response = self.client.get(
+            self.url, {"ordering_type": "followers_count"}
+        )
+        data = response.json()
+
+        self.assertEqual(data[0]["id"], self.other_one.pk)
+        self.assertEqual(data[0]["first_name"], self.other_one.first_name)
+        self.assertEqual(data[0]["last_name"], self.other_one.last_name)
+        self.assertEqual(data[0]["email"], self.other_one.email)
+        self.assertIsNone(data[0]["profile_picture"])
+        self.assertFalse(data[0]["is_following_you"])
+
+    def test_pagination(self):
+        Follow.objects.create(follower=self.user, followed=self.other_one)
+
+        response = self.client.get(self.url, {"page": 1, "page_size": 1})
+        data = response.json()
+
+        self.assertEqual(data["count"], 2)
+        self.assertIn("page=2", data["next"])
+        self.assertIsNone(data["previous"])
+        data = data["results"]
+        self.assertEqual(data[0]["id"], self.other_one.pk)
+        self.assertEqual(data[0]["first_name"], self.other_one.first_name)
+        self.assertEqual(data[0]["last_name"], self.other_one.last_name)
+        self.assertEqual(data[0]["email"], self.other_one.email)
+        self.assertIsNone(data[0]["profile_picture"])
+        self.assertFalse(data[0]["is_following_you"])
