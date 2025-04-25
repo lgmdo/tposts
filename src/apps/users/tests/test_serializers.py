@@ -59,7 +59,6 @@ class LoginSerializerTest(TestCase):
             "password": "strongpassword123",
         }
         self.user = get_user_model().objects.create_user(**self.user_data)
-        self.user.is_active = True
         self.user.save()
 
     def test_valid_credentials(self):

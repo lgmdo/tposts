@@ -1,16 +1,19 @@
+from datetime import timedelta
 from io import BytesIO
+from typing import cast
 from unittest.mock import ANY, MagicMock, patch
 
+import jwt
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
-from typing_extensions import cast
 
 from ..models import CustomUser
 
@@ -35,7 +38,11 @@ class SignUpViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 204)
-        self.assertTrue(User.objects.filter(email="test@example.com").exists())
+        user = cast(
+            CustomUser, User.objects.filter(email="test@example.com").first()
+        )
+        self.assertIsNotNone(user)
+        self.assertFalse(user.is_email_confirmed)
         send_mail.assert_called_once_with(
             ANY,
             ANY,
@@ -78,6 +85,78 @@ class SignUpViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("password", response.json())
         send_mail.assert_not_called()
+
+
+class ConfirmSignUpTests(TestCase):
+    def test_confirm_signup_success(self):
+        user_data = {
+            "email": "test@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "password": "securepassword123",
+        }
+        user = cast(CustomUser, User.objects.create_user(**user_data))
+        expiration = timezone.now() + timedelta(hours=1)
+        token = jwt.encode(  # pyright: ignore
+            {
+                "uid": user.pk,
+                "exp": expiration,
+            },
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        url = reverse("confirm-sign-up", args=[token])
+
+        response = self.client.get(url)
+
+        user.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(user.is_email_confirmed)
+
+    def test_confirm_signup_missing_uid(self):
+        expiration = timezone.now() + timedelta(hours=1)
+        token = jwt.encode(  # pyright: ignore
+            {
+                "uid": 9999,
+                "exp": expiration,
+            },
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        url = reverse("confirm-sign-up", args=[token])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_confirm_signup_already_confirmed(self):
+        user_data = {
+            "email": "test@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "password": "securepassword123",
+        }
+        user = cast(CustomUser, User.objects.create_user(**user_data))
+        user.is_email_confirmed = True
+        user.save()
+        expiration = timezone.now() + timedelta(hours=1)
+        token = jwt.encode(  # pyright: ignore
+            {
+                "uid": user.pk,
+                "exp": expiration,
+            },
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        url = reverse("confirm-sign-up", args=[token])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_confirm_signup_invalid_token(self):
+        url = reverse("confirm-sign-up", args=["token_invalid"])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class LoginViewTests(TestCase):

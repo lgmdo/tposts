@@ -24,6 +24,7 @@ class UsersManagersTests(TestCase):
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
+        self.assertFalse(user.is_email_confirmed)
 
     def test_create_superuser(self):
         User = cast(CustomUserManager, get_user_model().objects)
@@ -40,3 +41,4 @@ class UsersManagersTests(TestCase):
         self.assertTrue(admin_user.is_active)
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
+        self.assertTrue(admin_user.is_email_confirmed)
