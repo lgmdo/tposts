@@ -4,6 +4,7 @@ ENV PYTHONPATH=src
 
 COPY . .
 
+RUN sed -i 's/\r$//' entrypoint.dev.sh
 RUN python -m venv ../poetry
 RUN ../poetry/bin/pip install -U pip setuptools
 RUN ../poetry/bin/pip install poetry==1.8
