@@ -53,25 +53,32 @@ class ConfirmSignUpView(APIView):
         Uses token sent to email by the sign-up route to validate the user
         registration
         """
-        payload = jwt.decode(  # pyright: ignore
-            token,
-            settings.SECRET_KEY,
-            algorithms=["HS256"],
-        )
+        try:
+            payload = jwt.decode(  # pyright: ignore
+                token,
+                settings.SECRET_KEY,
+                algorithms=["HS256"],
+            )
+        except Exception as _:
+            return Response(
+                {"detail": "Invalid token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         uid = payload.get("uid")
 
         if not uid:
             return Response(
-                {"detail": "Token inválido"},
+                {"detail": "Invalid token."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = get_object_or_404(CustomUser, pk=uid)
 
-        if user.is_active:
+        if user.is_email_confirmed:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        user.is_active = True
+        user.is_email_confirmed = True
         user.save()
         return Response(
             status=status.HTTP_204_NO_CONTENT,
