@@ -26,14 +26,14 @@ test:
 	@$(REMOVE_MEDIA)
 
 type-check:
-	@$(ECHO) "Running type-check $(RUNNING_MODE)"
+	@echo "Running type-check $(RUNNING_MODE)"
 	@$(PYRIGHT);
 
 lint:
-	@$(ECHO) "Running lint $(RUNNING_MODE)"
+	@echo "Running lint $(RUNNING_MODE)"
 	@$(RUFF) check;
 
 migrate:
-	@$(ECHO) "Running migration $(RUNNING_MODE)"
+	@echo "Running migration $(RUNNING_MODE)"
 	@$(PYTHON) $(MANAGE_PY) makemigrations
 	@$(PYTHON) $(MANAGE_PY) migrate
