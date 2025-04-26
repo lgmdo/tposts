@@ -13,6 +13,8 @@ services:
       - ${SERVER_PORT}:8000
     volumes:
       - ./src:/usr/local/tposts/src
+    depends_on: 
+      - db
   db:
     container_name: tposts-db
     image: postgres
